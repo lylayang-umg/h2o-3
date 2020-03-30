@@ -145,18 +145,21 @@ public class SegmentModelsBuilder {
       if (_parallelism == 1) {
         _stats = _builder.buildModels(_segment_models);
       } else {
-        List<Callable<SegmentModelsStats>> runnables = Stream.<Callable<SegmentModelsStats>>generate(
-                () -> (() -> _builder.clone().buildModels(_segment_models))
-        ).limit(_parallelism).collect(Collectors.toList());
-        try {
-          ExecutorService executor = Executors.newFixedThreadPool(_parallelism);
-          _stats = new SegmentModelsStats();
-          for (Future<SegmentModelsStats> f : executor.invokeAll(runnables)) {
-            _stats.reduce(f.get());
-          }
-        } catch (ExecutionException | InterruptedException e) {
-          throw new RuntimeException("Failed to build segment-models", e);
-        }
+        ExecutorService executor = Executors.newFixedThreadPool(_parallelism);
+        _stats = Stream.<Callable<SegmentModelsStats>>generate(
+                () -> (() -> _builder.clone().buildModels(_segment_models)))
+                .limit(_parallelism)
+                .map(callable -> executor.submit(callable))
+                .map(future -> {
+                  try {
+                    return future.get();
+                  } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException("Failed to build segment-models", e);
+                  }
+                }).reduce((a, b) -> {
+                  a.reduce(b);
+                  return a;
+                }).get();
       }
       Log.info("Finished per-segment model building on node ", H2O.SELF, "; summary: ", _stats);
     }
