@@ -6,8 +6,6 @@ import water.fvec.Frame;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.Log;
 
-import static hex.segments.LocalSequentialSegmentModelsBuilder.SegmentModelsStats;
-
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -132,7 +130,7 @@ public class SegmentModelsBuilder {
     final int _parallelism;
 
     // OUT
-    LocalSequentialSegmentModelsBuilder.SegmentModelsStats _stats;
+    SegmentModelsStats _stats;
 
     private MultiNodeRunner(LocalSequentialSegmentModelsBuilder builder, SegmentModels segmentModels, int parallelism) {
       _builder = builder;
